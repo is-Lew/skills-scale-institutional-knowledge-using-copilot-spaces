@@ -1,0 +1,91 @@
+name: Create README and open PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to link (default 2)'
+        required: false
+        default: '2'
+      branch_name:
+        description: 'Branch name to create'
+        required: false
+        default: 'docs/add-octoacme-readme'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Create docs directory and README
+        run: |
+          mkdir -p docs
+          cat > docs/README.md <<'README'
+# OctoAcme Project Management Docs
+
+This folder centralizes OctoAcme's project management process documents and provides a short overview to help new team members and contributors quickly find the right guidance.
+
+## Brief Overview of OctoAcme Project Management Processes
+
+OctoAcme follows a clear, customer‑first lifecycle: Initiation → Planning → Execution → Release → Close & Retrospective. Initiation validates the business need and records success metrics in a Project One‑pager. Planning breaks approved work into a prioritized backlog with acceptance criteria, a Definition of Done, a release plan, and a Risk Register. Execution uses a project board workflow (Backlog → Ready → In Progress → In Review → QA → Done) and a PR process that enforces CI, linting, small changes, and linking PRs to issues and acceptance criteria.
+
+Roles and accountabilities are explicit: Product Managers (PdMs) own outcomes and prioritization; Project Managers (PMs) coordinate delivery, risks, timelines, and stakeholder communications; Developers implement and test; QA validates acceptance criteria and conducts manual verification where needed; stakeholders provide approvals and domain inputs. Communication is structured with daily standups, weekly delivery syncs (PM + PdM), milestone demos, and monthly stakeholder updates, plus defined escalation paths for blockers and incidents.
+
+Quality assurance and release controls are integrated throughout: unit and integration tests, security scanning in CI, end‑to‑end smoke tests for critical flows, and a staging verification step before production. Pre‑release requirements include passing CI/security checks, documented release notes, a rollback/mitigation plan, and post‑deploy verifications. Retrospectives capture learnings and convert them to tracked action items to continuously improve processes.
+
+## Documentation links
+
+- [Project Management Overview](docs/octoacme-project-management-overview.md)
+- [Project Initiation Guide](docs/octoacme-project-initiation.md)
+- [Project Planning](docs/octoacme-project-planning.md)
+- [Execution & Tracking](docs/octoacme-execution-and-tracking.md)
+- [Risk Management & Communication](docs/octoacme-risks-and-communication.md)
+- [Release & Deployment Guide](docs/octoacme-release-and-deployment.md)
+- [Retrospective & Continuous Improvement](docs/octoacme-retrospective-and-continuous-improvement.md)
+- [Roles and Personas](docs/octoacme-roles-and-personas.md)
+
+## How to use this folder
+
+- Read the overview to get the high level; consult the specific doc for operational details.
+- Keep project-specific artifacts (one‑pagers, risk registers, release notes) in the project repository under docs/ or in a `.copilot/` folder if you want Copilot Spaces to ingest them as context.
+- Use the issue template in `.github/ISSUE_TEMPLATE/` to propose updates to these docs.
+README
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create branch, commit, and push
+        env:
+          BRANCH: ${{ github.event.inputs.branch_name }}
+        run: |
+          git checkout -b "$BRANCH" || git checkout "$BRANCH"
+          git add docs/README.md
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: add README for OctoAcme project management docs"
+            git push --set-upstream origin "$BRANCH"
+          fi
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: docs: add README for OctoAcme project management docs
+          base: main
+          branch: ${{ github.event.inputs.branch_name }}
+          title: docs: add README for OctoAcme project management docs
+          body: |
+            This adds a centralized README in docs/ summarizing OctoAcme's project management lifecycle, roles, communication cadence, and QA/release controls.
+
+            Closes #${{ github.event.inputs.issue_number }}
+          reviewers: is-Lew
+          draft: false
