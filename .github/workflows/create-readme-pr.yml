@@ -66,6 +66,7 @@ README
         env:
           BRANCH: ${{ github.event.inputs.branch_name }}
         run: |
+          # create branch (or switch if it exists), add file, commit and push
           git checkout -b "$BRANCH" || git checkout "$BRANCH"
           git add docs/README.md
           if git diff --cached --quiet; then
